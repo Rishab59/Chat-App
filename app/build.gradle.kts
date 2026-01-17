@@ -46,4 +46,8 @@ dependencies {
 
     // Country Code Picker
     implementation("com.hbb20:ccp:2.5.0")
+
+    // Authenticate with Firebase on Android using a Phone Number
+    implementation(platform("com.google.firebase:firebase-bom:34.8.0"))
+    implementation("com.google.firebase:firebase-auth")
 }
