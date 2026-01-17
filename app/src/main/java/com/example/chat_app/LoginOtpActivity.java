@@ -1,5 +1,6 @@
 package com.example.chat_app;
 
+import android.content.Intent;
 import android.os.Bundle;
 //import android.util.Log;
 import android.view.View;
@@ -12,12 +13,17 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.chat_app.utils.AndroidUtil;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.FirebaseException;
+import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.PhoneAuthCredential;
 import com.google.firebase.auth.PhoneAuthOptions;
 import com.google.firebase.auth.PhoneAuthProvider;
 
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
 public class LoginOtpActivity extends AppCompatActivity {
@@ -47,9 +53,23 @@ public class LoginOtpActivity extends AppCompatActivity {
         phoneNumber = getIntent().getExtras().getString("phone");
 
         sendOtp(phoneNumber, false);
+
+        nextBtn.setOnClickListener(v -> {
+            String enteredOtp = otpInput.getText().toString();
+
+            PhoneAuthCredential credential = PhoneAuthProvider.getCredential(verificationCode, enteredOtp);
+            signIn(credential);
+
+            setInProgress(true);
+        });
+
+        resendOtpTextView.setOnClickListener(v -> {
+            sendOtp(phoneNumber, true);
+        });
     }
 
     private void sendOtp(String phoneNumber, boolean isResend){
+        startResendTimer();
         setInProgress(true);
 
         PhoneAuthOptions.Builder builder =
@@ -60,7 +80,7 @@ public class LoginOtpActivity extends AppCompatActivity {
                         .setCallbacks(new PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
                             @Override
                             public void onVerificationCompleted(@NonNull PhoneAuthCredential phoneAuthCredential) {
-                                signIn(phoneAuthCredential);
+                                signIn(phoneAuthCredential); // Automatic OTP checking if received on same device, then signIn without clicking nextBtn
 
                                 setInProgress(false);
                             }
@@ -105,5 +125,43 @@ public class LoginOtpActivity extends AppCompatActivity {
 
     private void signIn(PhoneAuthCredential phoneAuthCredential){
         // Login and go to next Activity (Login Username)
+        setInProgress(true);
+
+        mAuth.signInWithCredential(phoneAuthCredential).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
+            @Override
+            public void onComplete(@NonNull Task<AuthResult> task) {
+                setInProgress(false);
+                if(task.isSuccessful()){
+                    Intent intent = new Intent(LoginOtpActivity.this, LoginUsernameActivity.class);
+                    intent.putExtra("phone", phoneNumber);
+
+                    startActivity(intent);
+                } else { // Entered Incorrect OTP
+                    AndroidUtil.showToast(getApplicationContext(), "OTP Verification Failed !");
+                }
+            }
+        });
+    }
+
+    private void startResendTimer(){
+        resendOtpTextView.setEnabled(false);
+
+        Timer timer = new Timer();
+        timer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                timeOutSeconds--;
+                resendOtpTextView.setText(String.format("Resend OTP in %d seconds", timeOutSeconds));
+
+                if(timeOutSeconds <= 0) {
+                    timeOutSeconds = 60L;
+                    timer.cancel();
+
+                    runOnUiThread(() -> {
+                        resendOtpTextView.setEnabled(true);
+                    });
+                }
+            }
+        },0,1000);
     }
 }
