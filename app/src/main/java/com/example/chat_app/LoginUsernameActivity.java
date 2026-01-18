@@ -6,6 +6,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -21,9 +22,12 @@ public class LoginUsernameActivity extends AppCompatActivity {
     EditText userNameInput;
     Button letMeInbtn;
     ProgressBar progressBar;
+    TextView userNameTextView;
 
     String phoneNumber;
     UserModel userModel;
+
+    boolean flag = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,6 +37,7 @@ public class LoginUsernameActivity extends AppCompatActivity {
         userNameInput = findViewById(R.id.login_username);
         letMeInbtn = findViewById(R.id.login_let_me_in_btn);
         progressBar = findViewById(R.id.login_progress_bar);
+        userNameTextView = findViewById(R.id.login_username_textView);
 
         phoneNumber = getIntent().getExtras().getString("phone");
 
@@ -55,7 +60,10 @@ public class LoginUsernameActivity extends AppCompatActivity {
                     userModel = task.getResult().toObject(UserModel.class); // converting the result to UserModel class
 
                     if(userModel != null) { // UserName already created in DB (Existing User)
-                        userNameInput.setText(userModel.getUserName());
+//                        userNameInput.setText(userModel.getUserName());
+                        userNameTextView.setText(String.format("Welcome, %s !", userModel.getUserName()));
+                        userNameInput.setVisibility(View.GONE);
+                        flag = true;
                     }
                 }
             }
@@ -63,6 +71,10 @@ public class LoginUsernameActivity extends AppCompatActivity {
     }
 
     private void setUserName(){
+        if(flag){
+            return;
+        }
+
         String userName = userNameInput.getText().toString();
         if(userName.isEmpty() || userName.length() < 3){
             userNameInput.setError("Username length should be atleast 3");
@@ -71,7 +83,7 @@ public class LoginUsernameActivity extends AppCompatActivity {
 
         setInProgress(true);
 
-        if(userModel != null) { // Existing user
+        if(userModel != null) { // Existing user (Extra check for safety)
             userModel.setUserName(userName);
         } else { // New User (Signup)
             userModel = new UserModel(phoneNumber, userName, Timestamp.now());
