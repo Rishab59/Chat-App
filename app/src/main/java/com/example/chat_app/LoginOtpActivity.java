@@ -159,6 +159,7 @@ public class LoginOtpActivity extends AppCompatActivity {
 
                     runOnUiThread(() -> {
                         resendOtpTextView.setEnabled(true);
+                        resendOtpTextView.setText("Resend OTP");
                     });
                 }
             }
