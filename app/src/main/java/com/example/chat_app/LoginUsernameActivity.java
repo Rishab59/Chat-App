@@ -71,7 +71,7 @@ public class LoginUsernameActivity extends AppCompatActivity {
     }
 
     private void setUserName(){
-        if(flag){
+        if(flag){ // This is to prevent updating username everytime the user login
             return;
         }
 
